@@ -125,6 +125,23 @@ def test_upload_rejects_non_pdf(tmp_path: Path) -> None:
     assert response.status_code == 400
 
 
+def test_upload_returns_browser_context_for_preview_chat(
+    monkeypatch, sample_pdf_path: Path
+) -> None:
+    monkeypatch.setattr(get_settings(), "gemini_api_key", "")
+    with sample_pdf_path.open("rb") as pdf_file:
+        response = TestClient(app).post(
+            "/api/documents",
+            files={"file": (sample_pdf_path.name, pdf_file, "application/pdf")},
+        )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["document"]["status"] == "indexed"
+    assert body["context_chunks"]
+    assert all(chunk["document_id"] == body["document"]["id"] for chunk in body["context_chunks"])
+
+
 @requires_gemini_key
 def test_upload_indexes_sample_pdf(sample_pdf_path: Path) -> None:
     with sample_pdf_path.open("rb") as fh:
