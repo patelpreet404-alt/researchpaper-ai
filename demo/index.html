@@ -29,6 +29,11 @@
             <span class="open-icon" aria-hidden="true">↗</span>
           </a>
           <p class="sidebar-note">Explore the original PDF and follow the page citations in each answer.</p>
+          <div class="upload-preview" aria-label="Upload preview, unavailable in this demo">
+            <span class="upload-preview-icon" aria-hidden="true">＋</span>
+            <strong>Bring in your own PDF</strong>
+            <span>Upload unavailable in this demo</span>
+          </div>
 
           <div class="eyebrow sidebar-heading">EXPLORE A TOPIC</div>
           <div class="topic-list">
@@ -54,6 +59,7 @@
           </div>
         </header>
 
+        <div class="workspace-body">
         <div class="conversation-wrap">
           <div class="conversation-heading">
             <div class="heading-copy">
@@ -86,7 +92,14 @@
             <input id="question-input" name="question" autocomplete="off" placeholder="Ask about the sample document..." maxlength="300" required />
             <button type="submit" aria-label="Send question">Send <span aria-hidden="true">↗</span></button>
           </form>
-          <p class="composer-caption">Sample answers are limited to topics covered in the 3-page guide.</p>
+          <p class="composer-caption">Prepared answers cover the included 3-page guide. No live AI is used.</p>
+        </div>
+        <aside class="paper-preview" aria-label="Sample paper preview">
+          <div class="paper-preview-heading"><div><span class="paper-kicker">SOURCE DOCUMENT</span><h2>Sample RAG Guide</h2></div><a href="/sample-rag-guide.pdf" target="_blank" rel="noopener noreferrer" aria-label="Open complete sample PDF">↗</a></div>
+          <div class="paper-tabs" role="group" aria-label="Choose sample page"><button type="button" data-page="1" aria-pressed="true">01</button><button type="button" data-page="2" aria-pressed="false">02</button><button type="button" data-page="3" aria-pressed="false">03</button></div>
+          <article class="paper-sheet" id="paper-sheet" aria-live="polite"><span class="paper-sheet-page">PAGE 01 / 03</span><h3>Introduction to Retrieval-Augmented Generation</h3><p>Retrieval-augmented generation combines a retrieval system with a language model. Relevant text from a source document is placed alongside a question so answers can draw on that evidence.</p><div class="paper-rule"></div><p>Instead of relying only on a model’s learned knowledge, RAG looks up useful passages when a question arrives.</p></article>
+          <p class="paper-preview-caption">Choose a page or select a citation to inspect the matching source.</p>
+        </aside>
         </div>
       </main>
     </div>
