@@ -19,6 +19,7 @@ from app.core.exceptions import (
     UnsupportedFileTypeError,
 )
 from app.domain.schemas import (
+    ContextChunk,
     DocumentListResponse,
     DocumentResponse,
     DocumentUploadResponse,
@@ -46,7 +47,13 @@ def add_sample_document(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=exc.message
         ) from exc
-    return DocumentUploadResponse(document=DocumentResponse.model_validate(document))
+    return DocumentUploadResponse(
+        document=DocumentResponse.model_validate(document),
+        context_chunks=[
+            ContextChunk.model_validate(chunk)
+            for chunk in service.get_context_chunks(document.id)
+        ],
+    )
 
 
 @router.post(
@@ -81,7 +88,13 @@ async def upload_document(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=exc.message
         ) from exc
 
-    return DocumentUploadResponse(document=DocumentResponse.model_validate(document))
+    return DocumentUploadResponse(
+        document=DocumentResponse.model_validate(document),
+        context_chunks=[
+            ContextChunk.model_validate(chunk)
+            for chunk in service.get_context_chunks(document.id)
+        ],
+    )
 
 
 @router.get(

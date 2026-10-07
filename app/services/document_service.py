@@ -117,6 +117,10 @@ class DocumentService:
     def list_documents(self) -> list[Document]:
         return self._repo.list_all()
 
+    def get_context_chunks(self, document_id: str) -> list[dict[str, object]]:
+        """Expose indexed text so the browser can retain it across serverless invocations."""
+        return self._vector_store.get_document_chunks(document_id)
+
     def import_sample(self) -> Document:
         sample_path = (
             Path(__file__).resolve().parents[2] / "data" / "sample_docs" / "sample-rag-guide.pdf"

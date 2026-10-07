@@ -21,7 +21,7 @@ from fastapi.responses import StreamingResponse
 
 from app.api.deps import get_chat_service, get_memory_service
 from app.core.exceptions import GeminiServiceError, MissingAPIKeyError, VectorStoreNotReadyError
-from app.domain.models import MessageRole
+from app.domain.models import MessageRole, RetrievedContext, TextChunk
 from app.domain.schemas import (
     ChatMessageResponse,
     ChatRequest,
@@ -34,6 +34,35 @@ from app.services.memory_service import MemoryService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["Chat"])
+
+
+def _context_for_request(request: ChatRequest, chat_service: ChatService) -> list[RetrievedContext]:
+    if request.context_chunks is not None:
+        try:
+            return chat_service.retrieve_context(
+                request.question, top_k=request.top_k, document_ids=request.document_ids
+            )
+        except VectorStoreNotReadyError:
+            pass
+    else:
+        return chat_service.retrieve_context(
+            request.question, top_k=request.top_k, document_ids=request.document_ids
+        )
+    return [
+        RetrievedContext(
+            chunk=TextChunk(
+                chunk_id=chunk.chunk_id,
+                document_id=chunk.document_id,
+                document_name=chunk.document_name,
+                page_number=chunk.page_number,
+                content=chunk.content,
+                chunk_index=chunk.chunk_index,
+            ),
+            score=1.0,
+        )
+        for chunk in request.context_chunks
+        if not request.document_ids or chunk.document_id in request.document_ids
+    ]
 
 
 @router.post(
@@ -57,9 +86,7 @@ def chat(
     history = memory_service.to_prompt_history(memory_service.get_history(conversation.id))
 
     try:
-        contexts = chat_service.retrieve_context(
-            request.question, top_k=request.top_k, document_ids=request.document_ids
-        )
+        contexts = _context_for_request(request, chat_service)
         answer = chat_service.generate_structured_answer(request.question, contexts, history)
     except VectorStoreNotReadyError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.message) from exc
@@ -100,9 +127,7 @@ def chat_stream(
     history = memory_service.to_prompt_history(memory_service.get_history(conversation.id))
 
     try:
-        contexts = chat_service.retrieve_context(
-            request.question, top_k=request.top_k, document_ids=request.document_ids
-        )
+        contexts = _context_for_request(request, chat_service)
     except VectorStoreNotReadyError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.message) from exc
 

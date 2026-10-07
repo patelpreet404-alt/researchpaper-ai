@@ -234,6 +234,15 @@ class VectorStoreService:
     def is_ready(self) -> bool:
         return self._index_exists() or self._lexical_path.exists()
 
+    def get_document_chunks(self, document_id: str) -> list[dict[str, object]]:
+        """Return a document's page-cited text for browser-side session persistence."""
+        with self._lock:
+            return [
+                {"content": row["content"], **row["metadata"]}
+                for row in self._read_lexical_rows()
+                if row["metadata"].get("document_id") == document_id
+            ]
+
     def _lexical_search(
         self, query: str, top_k: int, document_ids: list[str] | None
     ) -> list[RetrievedContext]:

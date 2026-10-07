@@ -32,10 +32,22 @@ class DocumentResponse(BaseModel):
     error_message: str | None = None
 
 
+class ContextChunk(BaseModel):
+    """A bounded, page-cited passage retained in the browser for stateless hosting."""
+
+    chunk_id: str
+    document_id: str
+    document_name: str = Field(..., max_length=255)
+    page_number: int = Field(..., ge=1)
+    content: str = Field(..., min_length=1, max_length=5000)
+    chunk_index: int = Field(..., ge=0)
+
+
 class DocumentUploadResponse(BaseModel):
     """Response returned immediately after a successful upload + indexing."""
 
     document: DocumentResponse
+    context_chunks: list[ContextChunk] = Field(default_factory=list)
     message: str = "Document uploaded and indexed successfully."
 
 
@@ -60,6 +72,11 @@ class ChatRequest(BaseModel):
     )
     top_k: int | None = Field(
         default=None, ge=1, le=20, description="Override the number of retrieved chunks."
+    )
+    context_chunks: list[ContextChunk] | None = Field(
+        default=None,
+        max_length=20,
+        description="Relevant PDF passages supplied by the browser for stateless deployments.",
     )
 
 

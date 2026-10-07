@@ -15,6 +15,8 @@
   const state = {
     conversationId: null,
     documents: [],
+    localDocuments: [],
+    documentContexts: {},
     conversations: [],
     isStreaming: false,
   };
@@ -116,12 +118,64 @@
       const res = await fetch(`${API_BASE}/api/documents`);
       if (!res.ok) throw new Error("Failed to load documents");
       const data = await res.json();
-      state.documents = data.documents;
+      const remote = data.documents || [];
+      const remoteIds = new Set(remote.map((document) => document.id));
+      state.documents = [
+        ...remote,
+        ...state.localDocuments.filter((document) => !remoteIds.has(document.id)),
+      ];
       renderDocumentList();
       renderDocumentScope();
     } catch (err) {
       console.error(err);
+      state.documents = [...state.localDocuments];
+      renderDocumentList();
+      renderDocumentScope();
     }
+  }
+
+  function retainDocument(data) {
+    const document = data.document;
+    state.localDocuments = [
+      document,
+      ...state.localDocuments.filter((item) => item.id !== document.id),
+    ];
+    state.documentContexts[document.id] = data.context_chunks?.length
+      ? data.context_chunks
+      : state.documentContexts[document.id] || [];
+    try {
+      sessionStorage.setItem("researchpaper-documents", JSON.stringify(state.localDocuments));
+      sessionStorage.setItem("researchpaper-contexts", JSON.stringify(state.documentContexts));
+    } catch (err) {
+      console.warn("Could not retain PDF text in this browser session.", err);
+      toast(
+        "This PDF is too large to keep in the browser session. Keep this tab open while using it.",
+        "error",
+      );
+    }
+  }
+
+  function relevantContextChunks(question) {
+    const stopWords = new Set([
+      "the", "and", "for", "with", "what", "how", "does", "this", "that", "from",
+    ]);
+    const terms = new Set(
+      (question.toLowerCase().match(/[a-z0-9]{2,}/g) || []).filter((term) => !stopWords.has(term)),
+    );
+    const selectedDocument = el.documentScope.value;
+    const chunks = Object.entries(state.documentContexts)
+      .filter(([documentId]) => !selectedDocument || selectedDocument === documentId)
+      .flatMap(([, passages]) => passages || []);
+    return chunks
+      .map((chunk) => {
+        const words = chunk.content.toLowerCase().match(/[a-z0-9]{2,}/g) || [];
+        const score = [...terms].reduce((total, term) => total + words.filter((word) => word === term).length, 0)
+          / Math.sqrt(Math.max(words.length, 1));
+        return { chunk, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4)
+      .map(({ chunk }) => chunk);
   }
 
   function renderDocumentList() {
@@ -168,7 +222,11 @@
     if (!confirm("Delete this document? This cannot be undone.")) return;
     try {
       const res = await fetch(`${API_BASE}/api/documents/${id}`, { method: "DELETE" });
-      if (!res.ok && res.status !== 204) throw new Error("Delete failed");
+      if (!res.ok && res.status !== 204 && res.status !== 404) throw new Error("Delete failed");
+      delete state.documentContexts[id];
+      state.localDocuments = state.localDocuments.filter((document) => document.id !== id);
+      sessionStorage.setItem("researchpaper-documents", JSON.stringify(state.localDocuments));
+      sessionStorage.setItem("researchpaper-contexts", JSON.stringify(state.documentContexts));
       toast("Document deleted.", "success");
       await refreshDocuments();
     } catch (err) {
@@ -190,6 +248,7 @@
         const res = await fetch(`${API_BASE}/api/documents`, { method: "POST", body: formData });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Upload failed");
+        retainDocument(data);
         toast(`${file.name} indexed successfully.`, "success");
       } catch (err) {
         toast(`Failed to index ${file.name}: ${err.message}`, "error");
@@ -211,6 +270,7 @@
       const res = await fetch(`${API_BASE}/api/documents/sample`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Could not add the sample paper");
+      retainDocument(data);
       toast("Sample paper is ready. Ask a question to explore it.", "success");
       await refreshDocuments();
     } catch (err) {
@@ -348,6 +408,7 @@
       question,
       conversation_id: state.conversationId,
       document_ids: el.documentScope.value ? [el.documentScope.value] : null,
+      context_chunks: relevantContextChunks(question),
     };
 
     try {
@@ -459,6 +520,12 @@
   // Init
   // ---------------------------------------------------------------------
   initTheme();
+  try {
+    state.localDocuments = JSON.parse(sessionStorage.getItem("researchpaper-documents") || "[]");
+    state.documentContexts = JSON.parse(sessionStorage.getItem("researchpaper-contexts") || "{}");
+  } catch (err) {
+    console.warn("Could not restore this browser session's PDF library.", err);
+  }
   checkHealth();
   refreshDocuments();
   refreshConversations();
