@@ -212,6 +212,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   width: min(100%, 1450px);
   margin: 0 auto;
   padding: 0 28px;
+  animation: workspace-enter .7s cubic-bezier(.2,.8,.2,1) both;
 }
 
 .topbar {
@@ -281,6 +282,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .paper-tabs button[aria-pressed="true"] { border-color: #c4b8ff; background: #ddd5ff; color: #1b1740; }
 .paper-sheet { min-height: 390px; border: 1px solid #dddde8; border-radius: 10px; background: #fff; color: #202238; padding: 27px 23px; box-shadow: 0 20px 40px -28px rgba(7, 7, 27, .58), 8px 8px 0 -4px #e7def5; animation: paper-reveal .36s cubic-bezier(.2,.8,.2,1) both; transform: perspective(900px) rotateY(-2deg); transition: transform .36s cubic-bezier(.2,.8,.2,1), box-shadow .36s ease; }
 .paper-sheet:hover { transform: perspective(900px) rotateY(0) translateY(-4px); box-shadow: 0 30px 50px -25px rgba(7, 7, 27, .68); }
+.paper-sheet.paper-turn { animation: paper-turn .58s cubic-bezier(.2,.8,.2,1) both; }
 .paper-sheet-page { color: #735ab8; font-size: 10px; font-weight: 800; letter-spacing: .12em; }
 .paper-sheet h3 { margin: 24px 0 20px; font-size: 21px; line-height: 1.2; letter-spacing: -.04em; }
 .paper-sheet p { color: #586075; font-size: 12px; line-height: 1.75; }
@@ -304,6 +306,12 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 }
 
 .reset-button:hover { border-color: var(--accent); color: var(--text); }
+
+.conversation-actions { display: flex; flex: none; align-items: center; gap: 8px; }
+.replay-button { border-color: rgba(196, 184, 255, .42); color: var(--text); }
+.replay-button span { color: #c6a9ff; }
+.sample-playing .composer { border-color: #c6a9ff; box-shadow: 0 0 0 3px rgba(196, 184, 255, .12), 0 16px 36px -28px rgba(165, 143, 255, .72); }
+.sample-playing .composer input { caret-color: var(--accent); }
 
 .sample-notice {
   display: flex;
@@ -384,7 +392,8 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   font-size: 11px;
   transition: border-color .18s, transform .18s, box-shadow .18s;
 }
-.citation:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 10px 25px var(--shadow); }
+.citation { transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s ease, border-color .2s ease; }
+.citation:hover { border-color: var(--accent); transform: perspective(700px) rotateY(-1deg) translateY(-2px); box-shadow: 0 10px 25px var(--shadow); }
 .citation-top { display: flex; align-items: center; gap: 8px; }
 .citation-icon { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 5px; background: #ee6f80; color: #fff; }
 .citation-page { margin-left: auto; border: 1px solid var(--border); border-radius: 5px; padding: 3px 6px; color: var(--muted); }
@@ -395,6 +404,8 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .message { animation: paper-enter .34s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes paper-enter { from { opacity: .72; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes paper-reveal { from { opacity: .72; filter: blur(3px); } to { opacity: 1; filter: blur(0); } }
+@keyframes paper-turn { 0% { opacity: .65; transform: perspective(900px) rotateY(9deg) translateX(12px); } 58% { opacity: 1; transform: perspective(900px) rotateY(-4deg) translateX(-3px); } 100% { transform: perspective(900px) rotateY(-2deg) translateX(0); } }
+@keyframes workspace-enter { from { opacity: 0; transform: translateY(12px) scale(.995); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
 .composer {
   display: flex;
@@ -453,9 +464,11 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   .topbar-label { font-size: 9px; }
   .workspace-body { padding: 0 18px; }
   .conversation-wrap { padding: 32px 0 20px; }
-  .conversation-heading { align-items: start; }
+  .conversation-heading { align-items: start; flex-wrap: wrap; }
+  .conversation-actions { flex-wrap: wrap; margin-left: auto; }
   .heading-copy h1 { font-size: 34px; }
   .heading-copy p { font-size: 12px; }
+  .conversation-actions { gap: 5px; }
   .reset-button { padding: 8px; font-size: 10px; }
   .sample-notice { margin-top: 23px; }
   .messages { min-height: 300px; }
@@ -464,6 +477,6 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .paper-sheet, .message, .answer-loading { animation: none; }
+  .paper-sheet, .paper-sheet.paper-turn, .message, .answer-loading, .workspace-body { animation: none; }
   .citation:hover, .paper-tabs button:hover, .paper-sheet, .paper-sheet:hover { transform: none; }
 }

@@ -34,6 +34,7 @@ const questionForm = document.getElementById("question-form");
 const questionInput = document.getElementById("question-input");
 const themeToggle = document.getElementById("theme-toggle");
 const resetButton = document.getElementById("reset-button");
+const replayButton = document.getElementById("replay-button");
 const welcomeTemplate = document.getElementById("empty-chat").cloneNode(true);
 const paperSheet = document.getElementById("paper-sheet");
 const composerButton = questionForm.querySelector('button[type="submit"]');
@@ -43,6 +44,19 @@ const pages = [
   { title: "Semantic Search and FAISS", paragraphs: ["Semantic search represents passages and questions as vectors, then compares how close their meanings are.", "FAISS indexes embeddings and finds the nearest passages for a new query vector."] }
 ];
 let pendingAnswer = null;
+let autoplayTimers = [];
+let isAutoTyping = false;
+let pageTurnTimer = null;
+
+function stopAutoplay() {
+  autoplayTimers.forEach((timer) => {
+    window.clearTimeout(timer);
+    window.clearInterval(timer);
+  });
+  autoplayTimers = [];
+  isAutoTyping = false;
+  document.body.classList.remove("sample-playing");
+}
 
 function showPage(page) {
   const selected = pages[page - 1];
@@ -67,6 +81,11 @@ function showPage(page) {
   document.querySelectorAll("[data-page]").forEach((button) => {
     button.setAttribute("aria-pressed", String(Number(button.dataset.page) === page));
   });
+  paperSheet.classList.remove("paper-turn");
+  void paperSheet.offsetWidth;
+  paperSheet.classList.add("paper-turn");
+  window.clearTimeout(pageTurnTimer);
+  pageTurnTimer = window.setTimeout(() => paperSheet.classList.remove("paper-turn"), 650);
 }
 
 function matchAnswer(question) {
@@ -108,6 +127,7 @@ function appendMessage(role, content, citation) {
 function ask(question) {
   const trimmed = question.trim();
   if (!trimmed || pendingAnswer) return;
+  stopAutoplay();
 
   document.getElementById("empty-chat")?.remove();
   appendMessage("user", trimmed);
@@ -121,7 +141,10 @@ function ask(question) {
   pendingAnswer = window.setTimeout(() => {
     loading.remove();
     const found = matchAnswer(trimmed);
-    if (found) appendMessage("assistant", found.answer, found);
+    if (found) {
+      appendMessage("assistant", found.answer, found);
+      showPage(found.page);
+    }
     else appendMessage("assistant", "This sample only contains prepared answers about RAG, semantic search, FAISS, and the document pipeline. Try one of the suggested questions to see a cited answer.");
     pendingAnswer = null;
     composerButton.disabled = false;
@@ -142,6 +165,7 @@ document.addEventListener("click", (event) => {
 });
 
 resetButton.addEventListener("click", () => {
+  stopAutoplay();
   if (pendingAnswer) window.clearTimeout(pendingAnswer);
   pendingAnswer = null;
   composerButton.disabled = false;
@@ -150,12 +174,55 @@ resetButton.addEventListener("click", () => {
   questionInput.focus();
 });
 
+function autoQuestion() {
+  const question = "What does FAISS do?";
+  const start = window.setTimeout(() => {
+    document.body.classList.add("sample-playing");
+    isAutoTyping = true;
+    questionInput.value = "";
+    questionInput.focus();
+    const typing = window.setInterval(() => {
+      if (!document.body.classList.contains("sample-playing")) return;
+      questionInput.value = question.slice(0, questionInput.value.length + 1);
+      if (questionInput.value.length >= question.length) {
+        window.clearInterval(typing);
+        isAutoTyping = false;
+        const send = window.setTimeout(() => {
+          document.body.classList.remove("sample-playing");
+          ask(question);
+        }, 420);
+        autoplayTimers.push(send);
+      }
+    }, 34);
+    autoplayTimers.push(typing);
+  }, 900);
+  autoplayTimers.push(start);
+}
+
+questionInput.addEventListener("input", () => {
+  if (document.body.classList.contains("sample-playing")) stopAutoplay();
+});
+questionInput.addEventListener("focus", () => {
+  if (document.body.classList.contains("sample-playing") && !isAutoTyping) stopAutoplay();
+});
+replayButton.addEventListener("click", () => {
+  if (pendingAnswer) window.clearTimeout(pendingAnswer);
+  pendingAnswer = null;
+  composerButton.disabled = false;
+  messages.replaceChildren(welcomeTemplate.cloneNode(true));
+  showPage(1);
+  questionInput.value = "";
+  autoQuestion();
+});
+
 try {
   const savedTheme = localStorage.getItem("researchpaper-demo-theme");
   if (savedTheme === "light" || savedTheme === "dark") {
     document.documentElement.dataset.theme = savedTheme;
   }
 } catch {}
+
+if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) autoQuestion();
 
 themeToggle.addEventListener("click", () => {
   const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
