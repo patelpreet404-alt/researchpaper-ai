@@ -360,6 +360,12 @@ mypy app
 
 ## Deployment
 
+### Vercel portfolio demo
+
+`demo/vercel.json` publishes a static site from `demo/`. It uses the included three-page sample PDF and prepared, cited answers. Visitors can try sample questions, inspect citations, and switch themes. The demo makes no API calls, accepts no uploads, and needs no environment variables. Deploy the repository as a Vercel project with the Framework Preset set to **Other** and `demo` as the Root Directory.
+
+The FastAPI application remains available for local, single-user use. Do not expose its document and conversation endpoints as a public multi-user service without adding user isolation, durable storage, and usage limits. Local SQLite, uploaded PDFs, and FAISS files are not suitable as persistent storage on Vercel Functions.
+
 ### Docker (recommended for production)
 
 This repository intentionally ships without a Dockerfile to keep it minimal, but PDF-ChatGPT

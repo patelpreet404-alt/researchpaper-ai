@@ -1,0 +1,92 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 5 0 R 7 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 9 0 R >> >> /MediaBox [0 0 612 792] /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 514 >>
+stream
+BT
+/F1 14 Tf
+72 720 Td
+16 TL
+(PDF-ChatGPT Sample Document) Tj
+T* () Tj
+T* (Page 1: Introduction to Retrieval-Augmented Generation) Tj
+T* () Tj
+T* (Retrieval-Augmented Generation \(RAG\) combines a retrieval system) Tj
+T* (with a large language model. Instead of relying only on the model's) Tj
+T* (trained knowledge, RAG fetches relevant text from an external) Tj
+T* (knowledge base -- such as your uploaded PDFs -- and includes it in) Tj
+T* (the prompt so the model can generate grounded, accurate answers.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 9 0 R >> >> /MediaBox [0 0 612 792] /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 487 >>
+stream
+BT
+/F1 14 Tf
+72 720 Td
+16 TL
+(Page 2: How This Sample Document Works) Tj
+T* () Tj
+T* (This file exists so you can test PDF-ChatGPT immediately after) Tj
+T* (installation, without needing your own PDF. Try asking:) Tj
+T* () Tj
+T* ('What is Retrieval-Augmented Generation?') Tj
+T* ('How does semantic search work in this app?') Tj
+T* () Tj
+T* (The application will chunk this text, embed it, store the vectors) Tj
+T* (in FAISS, and retrieve the most relevant passages to answer you.) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 9 0 R >> >> /MediaBox [0 0 612 792] /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 450 >>
+stream
+BT
+/F1 14 Tf
+72 720 Td
+16 TL
+(Page 3: Semantic Search and FAISS) Tj
+T* () Tj
+T* (Semantic search finds text that is conceptually similar to a query,) Tj
+T* (not just textually similar. Each chunk of text is converted into a) Tj
+T* (high-dimensional vector \(an embedding\). FAISS indexes these vectors) Tj
+T* (so that, given a new query vector, it can quickly find the nearest) Tj
+T* (neighbors -- the chunks most likely to contain the answer.) Tj
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000253 00000 n 
+0000000818 00000 n 
+0000000944 00000 n 
+0000001482 00000 n 
+0000001608 00000 n 
+0000002109 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+2179
+%%EOF

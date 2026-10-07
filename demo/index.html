@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0d1020" />
+    <meta name="description" content="Explore ResearchPaper AI through an interactive sample document with cited answers." />
+    <title>ResearchPaper AI — Interactive Sample</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div class="site-shell">
+      <aside class="sidebar" aria-label="Sample document">
+        <a class="brand" href="/" aria-label="ResearchPaper AI home">
+          <span class="brand-mark" aria-hidden="true">R<span>.</span></span>
+          <span>ResearchPaper <strong>AI</strong></span>
+        </a>
+
+        <div class="sidebar-content">
+          <div class="eyebrow">DOCUMENT LIBRARY</div>
+          <a class="document-card" href="/sample-rag-guide.pdf" target="_blank" rel="noopener noreferrer">
+            <span class="document-icon" aria-hidden="true">PDF</span>
+            <span class="document-details">
+              <strong>Sample RAG Guide</strong>
+              <span>3 pages · included example</span>
+            </span>
+            <span class="open-icon" aria-hidden="true">↗</span>
+          </a>
+          <p class="sidebar-note">Explore the original PDF and follow the page citations in each answer.</p>
+
+          <div class="eyebrow sidebar-heading">EXPLORE A TOPIC</div>
+          <div class="topic-list">
+            <button type="button" class="topic-button" data-question="What is retrieval-augmented generation?">Retrieval-augmented generation <span>→</span></button>
+            <button type="button" class="topic-button" data-question="How does semantic search work?">Semantic search <span>→</span></button>
+            <button type="button" class="topic-button" data-question="What does FAISS do?">FAISS vector search <span>→</span></button>
+            <button type="button" class="topic-button" data-question="How does this app process a document?">Document pipeline <span>→</span></button>
+          </div>
+        </div>
+
+        <div class="sidebar-footer">
+          <span class="demo-status"><span class="status-dot"></span> Browser-local sample</span>
+          <a href="https://github.com/patelpreet404-alt/researchpaper-ai" target="_blank" rel="noopener noreferrer">View source ↗</a>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <span class="topbar-label">DOCUMENT INTELLIGENCE / DEMO</span>
+          <div class="topbar-actions">
+            <button type="button" id="theme-toggle" class="icon-button" aria-label="Switch color theme" title="Switch color theme">◐</button>
+            <a class="topbar-source" href="https://github.com/patelpreet404-alt/researchpaper-ai" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+          </div>
+        </header>
+
+        <div class="conversation-wrap">
+          <div class="conversation-heading">
+            <div class="heading-copy">
+              <span class="eyebrow">INTERACTIVE SAMPLE</span>
+              <h1>Ask the document<span class="heading-period">.</span></h1>
+              <p>See how ResearchPaper AI presents grounded answers with page-level citations.</p>
+            </div>
+            <button type="button" id="reset-button" class="reset-button">New conversation</button>
+          </div>
+
+          <div class="sample-notice" role="note">
+            <span class="notice-icon" aria-hidden="true">✦</span>
+            <p><strong>Sample mode.</strong> Answers are prepared from the included PDF. This page does not upload files, call an AI model, or save your questions.</p>
+          </div>
+
+          <div id="messages" class="messages" aria-live="polite">
+            <div class="empty-chat" id="empty-chat">
+              <div class="empty-mark" aria-hidden="true">✦</div>
+              <h2>Start with a question</h2>
+              <p>Choose a prompt below or ask about RAG, semantic search, FAISS, or the document pipeline.</p>
+              <div class="quick-prompts">
+                <button type="button" data-question="What is retrieval-augmented generation?">What is RAG? <span>↗</span></button>
+                <button type="button" data-question="How does semantic search work?">How does search work? <span>↗</span></button>
+              </div>
+            </div>
+          </div>
+
+          <form id="question-form" class="composer">
+            <label for="question-input" class="sr-only">Ask a question about the sample document</label>
+            <input id="question-input" name="question" autocomplete="off" placeholder="Ask about the sample document..." maxlength="300" required />
+            <button type="submit" aria-label="Send question">Send <span aria-hidden="true">↗</span></button>
+          </form>
+          <p class="composer-caption">Sample answers are limited to topics covered in the 3-page guide.</p>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
