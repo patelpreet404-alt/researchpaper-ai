@@ -9,6 +9,7 @@ can be safely injected throughout the application.
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -16,6 +17,9 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+DEFAULT_DATA_DIR = (
+    Path("/tmp") / "researchpaper-ai" if os.environ.get("VERCEL") == "1" else BASE_DIR / "data"
+)
 
 
 class Settings(BaseSettings):
@@ -31,7 +35,7 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # Application metadata
     # ------------------------------------------------------------------
-    app_name: str = Field(default="PDF-ChatGPT", alias="APP_NAME")
+    app_name: str = Field(default="ResearchPaper AI", alias="APP_NAME")
     app_env: str = Field(default="development", alias="APP_ENV")
     app_version: str = Field(default="1.0.0", alias="APP_VERSION")
     debug: bool = Field(default=True, alias="DEBUG")
@@ -44,15 +48,16 @@ class Settings(BaseSettings):
     cors_origins: str = Field(default="*", alias="CORS_ORIGINS")
 
     # ------------------------------------------------------------------
-    # OpenAI
+    # Gemini
     # ------------------------------------------------------------------
-    openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
-    openai_chat_model: str = Field(default="gpt-4.1-mini", alias="OPENAI_CHAT_MODEL")
-    openai_embedding_model: str = Field(
-        default="text-embedding-3-small", alias="OPENAI_EMBEDDING_MODEL"
+    gemini_api_key: str = Field(default="", alias="GEMINI_API_KEY")
+    gemini_chat_model: str = Field(default="gemini-3.8-flash", alias="GEMINI_CHAT_MODEL")
+    gemini_embedding_model: str = Field(
+        default="gemini-embedding-001", alias="GEMINI_EMBEDDING_MODEL"
     )
-    openai_request_timeout: int = Field(default=60, alias="OPENAI_REQUEST_TIMEOUT")
-    openai_max_output_tokens: int = Field(default=1024, alias="OPENAI_MAX_OUTPUT_TOKENS")
+    gemini_request_timeout: int = Field(default=60, alias="GEMINI_REQUEST_TIMEOUT")
+    gemini_max_output_tokens: int = Field(default=2048, alias="GEMINI_MAX_OUTPUT_TOKENS")
+    max_ocr_pages: int = Field(default=30, ge=0, alias="MAX_OCR_PAGES")
 
     # ------------------------------------------------------------------
     # RAG / chunking
@@ -65,15 +70,15 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # Storage paths
     # ------------------------------------------------------------------
-    data_dir: Path = Field(default=BASE_DIR / "data", alias="DATA_DIR")
-    upload_dir: Path = Field(default=BASE_DIR / "data" / "uploads", alias="UPLOAD_DIR")
+    data_dir: Path = Field(default=DEFAULT_DATA_DIR, alias="DATA_DIR")
+    upload_dir: Path = Field(default=DEFAULT_DATA_DIR / "uploads", alias="UPLOAD_DIR")
     vector_store_dir: Path = Field(
-        default=BASE_DIR / "data" / "vector_store", alias="VECTOR_STORE_DIR"
+        default=DEFAULT_DATA_DIR / "vector_store", alias="VECTOR_STORE_DIR"
     )
     database_url: str = Field(
-        default=f"sqlite:///{BASE_DIR / 'data' / 'app.db'}", alias="DATABASE_URL"
+        default=f"sqlite:///{DEFAULT_DATA_DIR / 'app.db'}", alias="DATABASE_URL"
     )
-    log_dir: Path = Field(default=BASE_DIR / "logs", alias="LOG_DIR")
+    log_dir: Path = Field(default=DEFAULT_DATA_DIR / "logs", alias="LOG_DIR")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
 
     @field_validator("upload_dir", "vector_store_dir", "log_dir", "data_dir", mode="after")
@@ -89,8 +94,14 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
     @property
+    def effective_max_upload_mb(self) -> int:
+        # Function platforms cap the whole multipart request. Keep room for
+        # multipart headers and metadata under Vercel's 4.5 MB request limit.
+        return min(self.max_upload_mb, 3) if os.environ.get("VERCEL") == "1" else self.max_upload_mb
+
+    @property
     def max_upload_bytes(self) -> int:
-        return self.max_upload_mb * 1024 * 1024
+        return self.effective_max_upload_mb * 1024 * 1024
 
 
 @lru_cache

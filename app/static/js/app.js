@@ -1,5 +1,5 @@
 /**
- * PDF-ChatGPT front-end application logic.
+ * ResearchPaper AI front-end application logic.
  *
  * Vanilla JavaScript (no build step) that talks to the FastAPI backend:
  *  - Uploads PDFs and polls the document library.
@@ -27,6 +27,7 @@
     sidebarToggle: document.getElementById("sidebar-toggle"),
     themeToggle: document.getElementById("theme-toggle"),
     newChatBtn: document.getElementById("new-chat-btn"),
+    sampleBtn: document.getElementById("sample-btn"),
     fileInput: document.getElementById("file-input"),
     uploadProgress: document.getElementById("upload-progress"),
     uploadProgressText: document.getElementById("upload-progress-text"),
@@ -58,7 +59,7 @@
   // Theme
   // ---------------------------------------------------------------------
   function initTheme() {
-    const saved = localStorage.getItem("pdf-chatgpt-theme") || "dark";
+    const saved = localStorage.getItem("researchpaper-theme") || "dark";
     document.documentElement.setAttribute("data-theme", saved);
   }
 
@@ -66,7 +67,7 @@
     const current = document.documentElement.getAttribute("data-theme");
     const next = current === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
-    localStorage.setItem("pdf-chatgpt-theme", next);
+    localStorage.setItem("researchpaper-theme", next);
   });
 
   el.sidebarToggle.addEventListener("click", () => {
@@ -97,10 +98,10 @@
     try {
       const res = await fetch(`${API_BASE}/api/health`);
       const data = await res.json();
-      el.healthIndicator.classList.add(data.openai_configured ? "ok" : "down");
-      el.healthIndicator.title = data.openai_configured
-        ? "API healthy — OpenAI key configured"
-        : "API running, but OPENAI_API_KEY is missing";
+      el.healthIndicator.classList.add("ok");
+      el.healthIndicator.title = data.gemini_configured
+        ? "Ready · AI answers enabled"
+        : "Ready · local document search enabled";
     } catch {
       el.healthIndicator.classList.add("down");
       el.healthIndicator.title = "API unreachable";
@@ -203,6 +204,23 @@
     e.target.value = "";
   });
 
+  el.sampleBtn.addEventListener("click", async () => {
+    el.sampleBtn.disabled = true;
+    el.sampleBtn.textContent = "Adding sample paper…";
+    try {
+      const res = await fetch(`${API_BASE}/api/documents/sample`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Could not add the sample paper");
+      toast("Sample paper is ready. Ask a question to explore it.", "success");
+      await refreshDocuments();
+    } catch (err) {
+      toast(err.message, "error");
+    } finally {
+      el.sampleBtn.disabled = false;
+      el.sampleBtn.innerHTML = 'Try the sample paper <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M5 4h7v7" /></svg>';
+    }
+  });
+
   // ---------------------------------------------------------------------
   // Conversations
   // ---------------------------------------------------------------------
@@ -254,9 +272,8 @@
     el.conversationTitle.textContent = "New Conversation";
     el.chatMessages.innerHTML = `
       <div class="welcome-card">
-        <h2>Welcome to PDF-ChatGPT</h2>
-        <p>Upload one or more PDF documents, then ask questions in natural language. Answers are generated
-           using Retrieval-Augmented Generation (RAG) and always cite the source document and page.</p>
+        <h2>Make sense of the paper.</h2>
+        <p>Bring a research paper. Ask what matters. Get answers grounded in the text, with page citations you can check.</p>
       </div>`;
     renderConversationList();
   });
@@ -283,7 +300,7 @@
 
     const bubble = document.createElement("div");
     bubble.className = "bubble";
-    bubble.innerHTML = marked.parse(content || "");
+    bubble.innerHTML = DOMPurify.sanitize(marked.parse(content || ""));
 
     if (sources.length) {
       const block = document.createElement("div");
@@ -291,7 +308,7 @@
       block.innerHTML = sources
         .map(
           (s) =>
-            `<div class="source-chip"><b>${escapeHtml(s.document_name)}</b> — page ${s.page_number} (relevance ${(s.relevance_score * 100).toFixed(0)}%)</div>`
+            `<div class="source-chip"><b>${escapeHtml(s.document_name)}</b> — page ${s.page_number} (match ${(s.relevance_score * 100).toFixed(0)}%)</div>`
         )
         .join("");
       bubble.appendChild(block);
@@ -368,7 +385,7 @@
             state.conversationId = data.conversation_id;
           } else if (event === "token") {
             answerText += data.text;
-            bubble.innerHTML = marked.parse(answerText);
+            bubble.innerHTML = DOMPurify.sanitize(marked.parse(answerText));
             el.chatMessages.scrollTop = el.chatMessages.scrollHeight;
           } else if (event === "sources" && data.sources?.length) {
             const block = document.createElement("div");
@@ -376,7 +393,7 @@
             block.innerHTML = data.sources
               .map(
                 (s) =>
-                  `<div class="source-chip"><b>${escapeHtml(s.document_name)}</b> — page ${s.page_number} (relevance ${(s.relevance_score * 100).toFixed(0)}%)</div>`
+                  `<div class="source-chip"><b>${escapeHtml(s.document_name)}</b> — page ${s.page_number} (match ${(s.relevance_score * 100).toFixed(0)}%)</div>`
               )
               .join("");
             bubble.appendChild(block);
@@ -445,4 +462,8 @@
   checkHealth();
   refreshDocuments();
   refreshConversations();
+  if (new URLSearchParams(window.location.search).get("demo") === "1") {
+    window.history.replaceState({}, "", "/workspace");
+    window.setTimeout(() => el.sampleBtn.click(), 100);
+  }
 })();

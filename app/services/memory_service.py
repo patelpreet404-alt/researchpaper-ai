@@ -3,7 +3,7 @@ Conversation memory service.
 
 Persists and retrieves chat history so that follow-up questions can be
 answered with awareness of prior turns. History is stored in SQLite via
-:class:`ConversationRepository` and replayed into the OpenAI Responses API
+    :class:`ConversationRepository` and replayed into the Gemini chat model
 as prior turns on each new request.
 """
 
@@ -25,8 +25,8 @@ MAX_HISTORY_MESSAGES = 12
 class MemoryService:
     """Reads and writes conversation turns, providing bounded history windows."""
 
-    def __init__(self, db: Session) -> None:
-        self._repo = ConversationRepository(db)
+    def __init__(self, db: Session, owner_id: str) -> None:
+        self._repo = ConversationRepository(db, owner_id)
 
     def get_or_create_conversation(
         self, conversation_id: str | None, title_hint: str = ""
@@ -67,7 +67,7 @@ class MemoryService:
 
     def to_prompt_history(self, messages: list[ChatMessage]) -> list[dict[str, str]]:
         """Convert stored messages into the ``role``/``content`` dict shape the
-        OpenAI Responses API expects for prior turns."""
+        generation provider expects for prior turns."""
         return [
             {"role": m.role.value, "content": m.content}
             for m in messages

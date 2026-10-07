@@ -13,7 +13,7 @@ import logging
 from collections.abc import Generator
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import get_settings
@@ -39,6 +39,20 @@ def init_db() -> None:
     from app.infrastructure import models_db  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
+    # Upgrade databases created before browser-session isolation was added.
+    # Existing rows are assigned to an inaccessible legacy owner so they are
+    # never exposed to a newly-created visitor session.
+    inspector = inspect(engine)
+    with engine.begin() as connection:
+        for table in ("documents", "conversations"):
+            columns = {column["name"] for column in inspector.get_columns(table)}
+            if "owner_id" not in columns:
+                connection.execute(
+                    text(
+                        f"ALTER TABLE {table} ADD COLUMN owner_id VARCHAR(36) NOT NULL "
+                        "DEFAULT 'legacy'"
+                    )
+                )
     logger.info("Database initialized at %s", settings.database_url)
 
 

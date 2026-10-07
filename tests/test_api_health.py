@@ -15,8 +15,8 @@ def test_health_check_returns_ok() -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "ok"
-    assert body["app_name"] == "PDF-ChatGPT"
-    assert "openai_configured" in body
+    assert body["app_name"] == "ResearchPaper AI"
+    assert "gemini_configured" in body
 
 
 def test_docs_endpoint_is_available() -> None:

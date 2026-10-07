@@ -40,9 +40,11 @@ class DocumentService:
         chunking_service: ChunkingService | None = None,
         vector_store_service: VectorStoreService | None = None,
         settings: Settings | None = None,
+        owner_id: str = "legacy",
     ) -> None:
         self._settings = settings or get_settings()
-        self._repo = DocumentRepository(db)
+        self._owner_id = owner_id
+        self._repo = DocumentRepository(db, owner_id)
         self._pdf_service = pdf_service or PDFExtractionService()
         self._chunking_service = chunking_service or ChunkingService(
             chunk_size=self._settings.chunk_size, chunk_overlap=self._settings.chunk_overlap
@@ -54,14 +56,16 @@ class DocumentService:
             raise UnsupportedFileTypeError()
         if size_bytes > self._settings.max_upload_bytes:
             raise FileTooLargeError(
-                f"File exceeds the {self._settings.max_upload_mb}MB upload limit."
+                f"File exceeds the {self._settings.effective_max_upload_mb}MB upload limit."
             )
 
     def save_upload(self, filename: str, content: bytes) -> tuple[str, Path]:
         """Persist the raw upload bytes to disk under a unique document id."""
         document_id = str(uuid.uuid4())
         safe_name = Path(filename).name
-        destination = self._settings.upload_dir / f"{document_id}_{safe_name}"
+        owner_upload_dir = self._settings.upload_dir / self._owner_id
+        owner_upload_dir.mkdir(parents=True, exist_ok=True)
+        destination = owner_upload_dir / f"{document_id}_{safe_name}"
         destination.write_bytes(content)
         logger.info("Saved upload '%s' (%d bytes) -> %s", filename, len(content), destination)
         return document_id, destination
@@ -101,15 +105,32 @@ class DocumentService:
             )
         except Exception as exc:  # noqa: BLE001
             logger.exception("Ingestion failed for document %s", document_id)
-            self._repo.update_status(
-                document_id, DocumentStatus.FAILED, error_message=str(exc)
-            )
+            try:
+                self._vector_store.delete_document(document_id)
+            except Exception:  # noqa: BLE001
+                logger.exception("Could not roll back the index for document %s", document_id)
+            self._repo.update_status(document_id, DocumentStatus.FAILED, error_message=str(exc))
             raise
 
         return self._repo.get(document_id)  # type: ignore[return-value]
 
     def list_documents(self) -> list[Document]:
         return self._repo.list_all()
+
+    def import_sample(self) -> Document:
+        sample_path = (
+            Path(__file__).resolve().parents[2] / "data" / "sample_docs" / "sample-rag-guide.pdf"
+        )
+        if not sample_path.exists():
+            raise FileNotFoundError("The sample PDF is not available in this deployment.")
+        existing = next(
+            (doc for doc in self._repo.list_all() if doc.filename == sample_path.name), None
+        )
+        if existing:
+            return existing
+        content = sample_path.read_bytes()
+        document_id, stored_path = self.save_upload(sample_path.name, content)
+        return self.ingest(document_id, sample_path.name, stored_path, len(content))
 
     def get_document(self, document_id: str) -> Document | None:
         return self._repo.get(document_id)

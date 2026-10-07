@@ -4,7 +4,7 @@ Chat endpoints.
 Provides three ways to interact with the RAG pipeline:
 
 * ``POST /api/chat`` — synchronous structured JSON answer (demonstrates
-  OpenAI Responses API structured output constrained to a Pydantic schema).
+  Gemini structured output constrained to a Pydantic schema).
 * ``POST /api/chat/stream`` — Server-Sent Events streaming endpoint used by
   the web UI for a token-by-token typing effect.
 * ``GET /api/conversations`` / ``GET /api/conversations/{id}`` — conversation
@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 
 from app.api.deps import get_chat_service, get_memory_service
-from app.core.exceptions import MissingAPIKeyError, OpenAIServiceError, VectorStoreNotReadyError
+from app.core.exceptions import GeminiServiceError, MissingAPIKeyError, VectorStoreNotReadyError
 from app.domain.models import MessageRole
 from app.domain.schemas import (
     ChatMessageResponse,
@@ -41,8 +41,8 @@ router = APIRouter(prefix="/api", tags=["Chat"])
     response_model=StructuredAnswer,
     summary="Ask a question and receive a structured JSON answer",
     description=(
-        "Retrieves relevant chunks via semantic search and asks the OpenAI "
-        "Responses API to answer using a constrained JSON schema "
+        "Retrieves relevant chunks via semantic search and asks Gemini "
+        "to answer using a constrained JSON schema "
         "(answer, key_points, sources, confidence)."
     ),
 )
@@ -67,7 +67,7 @@ def chat(
         raise HTTPException(
             status_code=status.HTTP_412_PRECONDITION_FAILED, detail=exc.message
         ) from exc
-    except OpenAIServiceError as exc:
+    except GeminiServiceError as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=exc.message) from exc
 
     memory_service.append_message(conversation.id, MessageRole.USER, request.question)
@@ -85,7 +85,7 @@ def chat(
     summary="Ask a question and stream the answer via Server-Sent Events",
     description=(
         "Streams the model's answer token-by-token as it is generated, using "
-        "the OpenAI Responses API streaming mode. The final SSE event contains "
+        "Gemini streaming generation. The final SSE event contains "
         "the resolved source citations."
     ),
 )
@@ -116,7 +116,7 @@ def chat_stream(
             for token in chat_service.stream_answer(request.question, contexts, history):
                 collected.append(token)
                 yield _sse_event("token", {"text": token})
-        except (OpenAIServiceError, MissingAPIKeyError) as exc:
+        except (GeminiServiceError, MissingAPIKeyError) as exc:
             yield _sse_event("error", {"detail": exc.message})
             return
 

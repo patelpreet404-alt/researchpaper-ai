@@ -10,8 +10,8 @@ from pathlib import Path
 import pytest
 
 # Ensure a predictable, isolated environment before any app module is imported.
-_TEST_DIR = Path(tempfile.mkdtemp(prefix="pdf-chatgpt-test-"))
-os.environ.setdefault("OPENAI_API_KEY", "sk-test-key-not-real")
+_TEST_DIR = Path(tempfile.mkdtemp(prefix="researchpaper-ai-test-"))
+os.environ.setdefault("GEMINI_API_KEY", "test-key-not-real")
 os.environ["DATA_DIR"] = str(_TEST_DIR / "data")
 os.environ["UPLOAD_DIR"] = str(_TEST_DIR / "data" / "uploads")
 os.environ["VECTOR_STORE_DIR"] = str(_TEST_DIR / "data" / "vector_store")

@@ -24,7 +24,10 @@ jobs:
       - name: Lint with ruff
         run: ruff check app tests
 
+      - name: Type check with mypy
+        run: mypy app
+
       - name: Run tests
         env:
-          OPENAI_API_KEY: sk-test-key-not-real
+          GEMINI_API_KEY: test-key-not-real
         run: pytest tests -v

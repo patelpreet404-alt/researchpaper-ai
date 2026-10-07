@@ -46,7 +46,7 @@ def configure_logging() -> None:
     root_logger.addHandler(file_handler)
 
     # Quiet down noisy third-party loggers.
-    for noisy_logger in ("httpx", "httpcore", "openai", "urllib3"):
+    for noisy_logger in ("httpx", "httpcore", "google_genai", "urllib3"):
         logging.getLogger(noisy_logger).setLevel(logging.WARNING)
 
     logging.getLogger(__name__).info(

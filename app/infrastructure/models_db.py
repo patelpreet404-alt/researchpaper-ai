@@ -14,6 +14,7 @@ class DocumentORM(Base):
     __tablename__ = "documents"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    owner_id: Mapped[str] = mapped_column(String(36), nullable=False, default="legacy")
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     stored_path: Mapped[str] = mapped_column(String(500), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="uploaded")
@@ -28,6 +29,7 @@ class ConversationORM(Base):
     __tablename__ = "conversations"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    owner_id: Mapped[str] = mapped_column(String(36), nullable=False, default="legacy")
     title: Mapped[str] = mapped_column(String(255), nullable=False, default="New conversation")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 

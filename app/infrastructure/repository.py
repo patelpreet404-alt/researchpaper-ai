@@ -30,12 +30,14 @@ logger = logging.getLogger(__name__)
 class DocumentRepository:
     """Persistence operations for :class:`Document` entities."""
 
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: Session, owner_id: str) -> None:
         self._db = db
+        self._owner_id = owner_id
 
     def add(self, document: Document) -> Document:
         row = DocumentORM(
             id=document.id,
+            owner_id=self._owner_id,
             filename=document.filename,
             stored_path=document.stored_path,
             status=document.status.value,
@@ -58,7 +60,11 @@ class DocumentRepository:
         chunk_count: int | None = None,
         error_message: str | None = None,
     ) -> None:
-        row = self._db.get(DocumentORM, document_id)
+        row = self._db.scalar(
+            select(DocumentORM).where(
+                DocumentORM.id == document_id, DocumentORM.owner_id == self._owner_id
+            )
+        )
         if row is None:
             return
         row.status = status.value
@@ -71,17 +77,27 @@ class DocumentRepository:
         self._db.commit()
 
     def get(self, document_id: str) -> Document | None:
-        row = self._db.get(DocumentORM, document_id)
+        row = self._db.scalar(
+            select(DocumentORM).where(
+                DocumentORM.id == document_id, DocumentORM.owner_id == self._owner_id
+            )
+        )
         return self._to_domain(row) if row else None
 
     def list_all(self) -> list[Document]:
         rows = self._db.scalars(
-            select(DocumentORM).order_by(DocumentORM.uploaded_at.desc())
+            select(DocumentORM)
+            .where(DocumentORM.owner_id == self._owner_id)
+            .order_by(DocumentORM.uploaded_at.desc())
         ).all()
         return [self._to_domain(row) for row in rows]
 
     def delete(self, document_id: str) -> bool:
-        row = self._db.get(DocumentORM, document_id)
+        row = self._db.scalar(
+            select(DocumentORM).where(
+                DocumentORM.id == document_id, DocumentORM.owner_id == self._owner_id
+            )
+        )
         if row is None:
             return False
         self._db.delete(row)
@@ -106,23 +122,30 @@ class DocumentRepository:
 class ConversationRepository:
     """Persistence operations for conversations and their messages."""
 
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: Session, owner_id: str) -> None:
         self._db = db
+        self._owner_id = owner_id
 
     def create(self, conversation: Conversation) -> Conversation:
-        row = ConversationORM(id=conversation.id, title=conversation.title)
+        row = ConversationORM(id=conversation.id, owner_id=self._owner_id, title=conversation.title)
         self._db.add(row)
         self._db.commit()
         self._db.refresh(row)
         return self._to_domain(row)
 
     def get(self, conversation_id: str) -> Conversation | None:
-        row = self._db.get(ConversationORM, conversation_id)
+        row = self._db.scalar(
+            select(ConversationORM).where(
+                ConversationORM.id == conversation_id, ConversationORM.owner_id == self._owner_id
+            )
+        )
         return self._to_domain(row) if row else None
 
     def list_all(self) -> list[Conversation]:
         rows = self._db.scalars(
-            select(ConversationORM).order_by(ConversationORM.created_at.desc())
+            select(ConversationORM)
+            .where(ConversationORM.owner_id == self._owner_id)
+            .order_by(ConversationORM.created_at.desc())
         ).all()
         return [self._to_domain(row) for row in rows]
 
@@ -142,7 +165,11 @@ class ConversationRepository:
     def get_history(self, conversation_id: str, limit: int = 20) -> list[ChatMessage]:
         rows = self._db.scalars(
             select(MessageORM)
-            .where(MessageORM.conversation_id == conversation_id)
+            .join(ConversationORM, MessageORM.conversation_id == ConversationORM.id)
+            .where(
+                MessageORM.conversation_id == conversation_id,
+                ConversationORM.owner_id == self._owner_id,
+            )
             .order_by(MessageORM.created_at.desc())
             .limit(limit)
         ).all()

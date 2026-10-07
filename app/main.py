@@ -11,6 +11,7 @@ single-page chat UI. Run with:
 from __future__ import annotations
 
 import logging
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -41,10 +42,9 @@ async def lifespan(app: FastAPI):
         settings.app_env,
     )
     init_db()
-    if not settings.openai_api_key:
-        logger.warning(
-            "OPENAI_API_KEY is not set. Chat and embedding features will be unavailable "
-            "until it is configured in your .env file."
+    if not settings.gemini_api_key:
+        logger.info(
+            "GEMINI_API_KEY is not set. Local keyword search and extractive answers are enabled."
         )
     yield
     logger.info("Shutting down %s", settings.app_name)
@@ -56,7 +56,7 @@ def create_app() -> FastAPI:
         description=(
             "An enterprise-grade Retrieval-Augmented Generation (RAG) API for chatting "
             "with your PDF documents, built on FastAPI, LangChain, FAISS, and the "
-            "OpenAI Responses API."
+            "Gemini API."
         ),
         version=settings.app_version,
         lifespan=lifespan,
@@ -68,10 +68,33 @@ def create_app() -> FastAPI:
     application.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
-        allow_credentials=True,
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @application.middleware("http")
+    async def isolate_browser_sessions(request: Request, call_next):
+        session_id = request.cookies.get("researchpaper_session", "")
+        try:
+            session_id = str(uuid.UUID(session_id))
+            is_new_session = False
+        except (ValueError, AttributeError):
+            session_id = str(uuid.uuid4())
+            is_new_session = True
+        request.state.owner_id = session_id
+        response = await call_next(request)
+        if is_new_session:
+            response.set_cookie(
+                "researchpaper_session",
+                session_id,
+                max_age=60 * 60 * 24 * 30,
+                httponly=True,
+                secure=settings.app_env.lower() in {"prod", "production"},
+                samesite="lax",
+                path="/",
+            )
+        return response
 
     application.include_router(health_router, prefix="/api")
     application.include_router(documents_router)
@@ -112,6 +135,10 @@ def _mount_static(application: FastAPI) -> None:
     @application.get("/", include_in_schema=False)
     async def serve_index() -> FileResponse:
         return FileResponse(static_dir / "index.html")
+
+    @application.get("/workspace", include_in_schema=False)
+    async def serve_workspace() -> FileResponse:
+        return FileResponse(static_dir / "workspace.html")
 
 
 app = create_app()

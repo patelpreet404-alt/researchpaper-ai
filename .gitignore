@@ -27,6 +27,7 @@ wheels/
 # ---------------------------------------------------------------------------
 venv/
 .venv/
+.venv*/
 env/
 ENV/
 env.bak/
@@ -38,6 +39,7 @@ venv.bak/
 .env
 .env.local
 .env.*.local
+.vercel/
 
 # ---------------------------------------------------------------------------
 # Application runtime data (never commit user content or generated indexes)
@@ -62,6 +64,7 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 .tox/
+.playwright-cli/
 
 # ---------------------------------------------------------------------------
 # Editors / OS

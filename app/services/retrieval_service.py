@@ -41,7 +41,7 @@ class RetrievalService:
         """Return relevant chunks for the query, filtered by a minimum relevance score."""
         k = top_k or self._settings.retrieval_top_k
         results = self._vector_store.similarity_search(query, top_k=k, document_ids=document_ids)
-        filtered = [r for r in results if r.score >= MIN_RELEVANCE_SCORE] or results
+        filtered = [r for r in results if r.score >= MIN_RELEVANCE_SCORE]
         logger.info(
             "Retrieval query=%r returned %d/%d chunks above threshold",
             query[:80],

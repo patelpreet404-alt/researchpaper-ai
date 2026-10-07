@@ -3,7 +3,7 @@ Pydantic v2 schemas used at the API boundary.
 
 These models define the public contract of the HTTP API: request payloads,
 response bodies, and the structured-output schema used to constrain the
-OpenAI Responses API. They are intentionally decoupled from the internal
+Gemini structured output API. They are intentionally decoupled from the internal
 domain dataclasses in :mod:`app.domain.models`.
 """
 
@@ -85,7 +85,7 @@ class ChatMessageResponse(BaseModel):
 
 
 class StructuredAnswer(BaseModel):
-    """Schema enforced on the OpenAI Responses API structured output call."""
+    """Schema enforced on the Gemini structured output call."""
 
     answer_found: bool = Field(..., description="Whether the context contained an answer.")
     answer: str = Field(..., description="The final answer in Markdown, or an explanation.")
@@ -118,7 +118,7 @@ class HealthResponse(BaseModel):
     app_name: str
     version: str
     environment: str
-    openai_configured: bool
+    gemini_configured: bool
 
 
 class ErrorResponse(BaseModel):

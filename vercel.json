@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "index.py": {
+      "maxDuration": 60,
+      "includeFiles": "{app/static/**,data/sample_docs/**}",
+      "excludeFiles": "tests/**,INSTRUCTION.md,Screenshot 2026.png,pdf-chatgpt.zip"
+    }
+  }
+}

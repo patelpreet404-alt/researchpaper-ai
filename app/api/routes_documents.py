@@ -30,6 +30,26 @@ router = APIRouter(prefix="/api/documents", tags=["Documents"])
 
 
 @router.post(
+    "/sample",
+    response_model=DocumentUploadResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add the built-in sample research PDF to this browser session",
+)
+def add_sample_document(
+    service: DocumentService = Depends(get_document_service),
+) -> DocumentUploadResponse:
+    try:
+        document = service.import_sample()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except PDFChatGPTError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=exc.message
+        ) from exc
+    return DocumentUploadResponse(document=DocumentResponse.model_validate(document))
+
+
+@router.post(
     "",
     response_model=DocumentUploadResponse,
     status_code=status.HTTP_201_CREATED,

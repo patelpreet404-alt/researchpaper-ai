@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PDF-ChatGPT — Design tokens
+   ResearchPaper AI — Design tokens
    ========================================================================== */
 :root,
 [data-theme="dark"] {
@@ -91,6 +91,23 @@ textarea, select, input { font-family: inherit; }
 
 .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; }
 .brand-icon { width: 26px; height: 26px; border-radius: 6px; }
+.brand-accent { color: var(--color-primary); }
+
+.sample-btn {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 9px 10px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-align: left;
+}
+.sample-btn:hover { border-color: var(--color-primary); color: var(--color-text); }
+.sample-btn:disabled { cursor: wait; opacity: 0.65; }
 
 .icon-btn {
   background: transparent;
@@ -282,6 +299,7 @@ textarea, select, input { font-family: inherit; }
   padding: 28px;
   text-align: left;
 }
+.welcome-card h2 { font-size: clamp(24px, 4vw, 36px); letter-spacing: -0.04em; }
 .welcome-card h2 { margin-top: 0; }
 .welcome-card ol { color: var(--color-text-muted); line-height: 1.7; }
 
@@ -410,4 +428,22 @@ textarea, select, input { font-family: inherit; }
   .sidebar-toggle { display: inline-flex; }
   .chat-header { padding-left: 56px; }
   .message-row { max-width: 92%; }
+}
+
+@media (max-width: 600px) {
+  .sidebar { right: 18%; }
+  .chat-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px 13px 56px;
+  }
+  .chat-header h1 { font-size: 16px; }
+  .chat-subtitle { display: none; }
+  .scope-selector { justify-content: space-between; }
+  .scope-selector select { flex: 1; min-width: 0; max-width: 68%; }
+  .chat-messages { padding: 16px; }
+  .welcome-card { margin: 24px auto; padding: 22px; }
+  .chat-input-bar { gap: 8px; padding: 12px; }
+  .chat-input-bar textarea { font-size: 16px; }
 }

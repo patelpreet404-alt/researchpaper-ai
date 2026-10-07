@@ -1,52 +1,67 @@
-"""
-Embedding generation service.
-
-Wraps ``langchain_openai.OpenAIEmbeddings`` so the rest of the application
-depends on a stable interface rather than a specific SDK. Embeddings are
-generated using OpenAI's ``text-embedding-3-small`` model by default, which
-offers a strong accuracy/cost trade-off for enterprise RAG workloads.
-"""
+"""Google Gemini embeddings for semantic research-paper retrieval."""
 
 from __future__ import annotations
 
 import logging
 
-from langchain_openai import OpenAIEmbeddings
+from google import genai
+from google.genai import errors, types
+from langchain_core.embeddings import Embeddings
 
 from app.config import Settings, get_settings
-from app.core.exceptions import MissingAPIKeyError
+from app.core.exceptions import GeminiServiceError, MissingAPIKeyError
 
 logger = logging.getLogger(__name__)
 
 
-class EmbeddingService:
-    """Produces vector embeddings for text using OpenAI's embedding models."""
+class EmbeddingService(Embeddings):
+    """Adapt Gemini's embedding API to LangChain's FAISS interface."""
 
     def __init__(self, settings: Settings | None = None) -> None:
         self._settings = settings or get_settings()
-        self._embeddings: OpenAIEmbeddings | None = None
+        self._client: genai.Client | None = None
 
     @property
-    def client(self) -> OpenAIEmbeddings:
-        """Lazily instantiate the LangChain embeddings client."""
-        if self._embeddings is None:
-            if not self._settings.openai_api_key:
+    def client(self) -> genai.Client:
+        if self._client is None:
+            if not self._settings.gemini_api_key:
                 raise MissingAPIKeyError()
-            self._embeddings = OpenAIEmbeddings(
-                model=self._settings.openai_embedding_model,
-                api_key=self._settings.openai_api_key,  # type: ignore[arg-type]
-                timeout=self._settings.openai_request_timeout,
+            self._client = genai.Client(
+                api_key=self._settings.gemini_api_key,
+                http_options=types.HttpOptions(
+                    timeout=self._settings.gemini_request_timeout * 1000
+                ),
             )
-            logger.info("Initialized OpenAIEmbeddings (%s)", self._settings.openai_embedding_model)
-        return self._embeddings
+        return self._client
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        """Embed a batch of texts (used when indexing document chunks)."""
         if not texts:
             return []
-        logger.info("Embedding %d text chunks", len(texts))
-        return self.client.embed_documents(texts)
+        logger.info("Embedding %d chunks with Gemini", len(texts))
+        vectors: list[list[float]] = []
+        for start in range(0, len(texts), 64):
+            try:
+                response = self.client.models.embed_content(
+                    model=self._settings.gemini_embedding_model,
+                    contents=texts[start : start + 64],
+                    config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
+                )
+            except errors.APIError as exc:
+                raise GeminiServiceError(f"Document embedding failed: {exc}") from exc
+            vectors.extend([embedding.values or [] for embedding in response.embeddings or []])
+        if len(vectors) != len(texts) or any(not vector for vector in vectors):
+            raise GeminiServiceError("Gemini returned an incomplete set of document embeddings.")
+        return vectors
 
     def embed_query(self, text: str) -> list[float]:
-        """Embed a single query string (used at retrieval time)."""
-        return self.client.embed_query(text)
+        try:
+            response = self.client.models.embed_content(
+                model=self._settings.gemini_embedding_model,
+                contents=text,
+                config=types.EmbedContentConfig(task_type="QUESTION_ANSWERING"),
+            )
+        except errors.APIError as exc:
+            raise GeminiServiceError(f"Query embedding failed: {exc}") from exc
+        if not response.embeddings or not response.embeddings[0].values:
+            raise GeminiServiceError("Gemini returned an empty query embedding.")
+        return response.embeddings[0].values
