@@ -1,0 +1,25 @@
+.git
+.vercel
+.venv
+.venv*/
+venv/
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.playwright-cli/
+.env
+.env.*
+!.env.example
+data/uploads/**
+data/vector_store/**
+data/app.db
+data/*.sqlite3
+logs/**
+tests/
+*.zip
+Screenshot 2026.png
+INSTRUCTION.md
