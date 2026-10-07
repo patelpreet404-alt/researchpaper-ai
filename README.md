@@ -93,7 +93,7 @@ The integration tests avoid paid model calls. For a browser check, start the app
 
 ## Vercel preview setup
 
-The repository includes a FastAPI entry point and Vercel function settings. Connect the GitHub repository to a Vercel **Preview** project and set `APP_ENV=production` so cookies use HTTPS. Add `GEMINI_API_KEY` in Vercel Project Settings to enable AI answers and OCR; the local sample mode does not need it.
+The root `index.py` exposes the FastAPI website to Vercel. Connect the GitHub repository to a Vercel **Preview** project and set `APP_ENV=production` so cookies use HTTPS. Add `GEMINI_API_KEY` in Vercel Project Settings to enable AI answers and OCR; the local sample mode does not need it.
 
 Vercel Functions have a read-only filesystem except for temporary `/tmp` scratch space, and cap request and response bodies at 4.5 MB. The app therefore uses `/tmp` and a 3 MB PDF limit on Vercel. That storage is temporary and can differ between function instances: use Vercel deployment for reviewing the interface and short demos only. Durable multi-user use needs managed persistence for the database, uploaded files, and vector index before enabling production traffic. See Vercel's [Python runtime](https://vercel.com/docs/functions/runtimes/python), [FastAPI guide](https://vercel.com/docs/frameworks/backend/fastapi), and [function limits](https://vercel.com/docs/functions/limitations).
 
