@@ -66,10 +66,15 @@ def test_sample_search_and_history_are_isolated_by_browser_session(monkeypatch) 
     assert second_browser.get(f"/api/conversations/{conversation['id']}").status_code == 404
 
 
-def test_stream_chat_uses_browser_context_when_serverless_index_is_unavailable(monkeypatch) -> None:
+@pytest.mark.parametrize("index_state", ["unavailable", "no-match"])
+def test_stream_chat_uses_browser_context_when_index_cannot_retrieve(
+    monkeypatch, index_state: str
+) -> None:
     monkeypatch.setattr(get_settings(), "gemini_api_key", "")
 
     def no_index(self, question, top_k=None, document_ids=None):
+        if index_state == "no-match":
+            return []
         raise VectorStoreNotReadyError()
 
     monkeypatch.setattr(ChatService, "retrieve_context", no_index)

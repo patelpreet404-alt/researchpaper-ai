@@ -39,9 +39,11 @@ router = APIRouter(prefix="/api", tags=["Chat"])
 def _context_for_request(request: ChatRequest, chat_service: ChatService) -> list[RetrievedContext]:
     if request.context_chunks is not None:
         try:
-            return chat_service.retrieve_context(
+            retrieved = chat_service.retrieve_context(
                 request.question, top_k=request.top_k, document_ids=request.document_ids
             )
+            if retrieved:
+                return retrieved
         except VectorStoreNotReadyError:
             pass
     else:
